@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import os
 import tempfile
 from basic_pitch.inference import predict_and_save
+from basic_pitch import ICASSP_2022_MODEL_PATH
 
 app = Flask(__name__)
 
@@ -22,17 +23,18 @@ def transcribe():
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = os.path.join(temp_dir, audio_file.filename)
         output_dir = os.path.join(temp_dir, "output")
-        os.makedirs(output_dir, exist_ok=True)
 
+        os.makedirs(output_dir, exist_ok=True)
         audio_file.save(input_path)
 
         predict_and_save(
             [input_path],
             output_dir,
-            save_midi=True,
-            sonify_midi=False,
-            save_model_outputs=False,
-            save_notes=False
+            True,
+            False,
+            False,
+            False,
+            ICASSP_2022_MODEL_PATH
         )
 
         files = os.listdir(output_dir)
