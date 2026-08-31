@@ -7,11 +7,9 @@ from basic_pitch import ICASSP_2022_MODEL_PATH
 
 app = Flask(__name__)
 
-
 @app.route("/")
 def home():
     return "Echo transcription backend is running!"
-
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
@@ -25,18 +23,10 @@ def transcribe():
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-            input_path = os.path.join(
-                temp_dir,
-                audio_file.filename
-            )
-
-            output_dir = os.path.join(
-                temp_dir,
-                "output"
-            )
+            input_path = os.path.join(temp_dir, audio_file.filename)
+            output_dir = os.path.join(temp_dir, "output")
 
             os.makedirs(output_dir, exist_ok=True)
-
             audio_file.save(input_path)
 
             predict_and_save(
@@ -57,10 +47,7 @@ def transcribe():
             })
 
     except Exception as e:
-        return jsonify({
-            "error": str(e)
-        }), 500
-
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
