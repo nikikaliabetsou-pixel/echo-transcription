@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
-from basic_pitch.inference import predict
+import os
+import tempfile
+from basic_pitch.inference import predict_and_save
 
 app = Flask(__name__)
 
@@ -15,25 +17,31 @@ def transcribe():
     audio_file = request.files["file"]
 
     if audio_file.filename == "":
-        return jsonify({"error": "No file selected"}), 400
+        return jsonify({"error": "No audio file selected"}), 400
 
-    file_path = "/tmp/input_audio"
-    audio_file.save(file_path)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        input_path = os.path.join(temp_dir, audio_file.filename)
+        output_dir = os.path.join(temp_dir, "output")
+        os.makedirs(output_dir, exist_ok=True)
 
-    try:
-        model_output, midi_data, note_events = predict(file_path)
+        audio_file.save(input_path)
 
-        midi_path = "/tmp/output.mid"
-        midi_data.write(midi_path)
+        predict_and_save(
+            [input_path],
+            output_dir,
+            save_midi=True,
+            sonify_midi=False,
+            save_model_outputs=False,
+            save_notes=False
+        )
+
+        files = os.listdir(output_dir)
 
         return jsonify({
-            "message": "Transcription successful",
-            "midi_file": midi_path
+            "message": "Transcription complete",
+            "files": files
         })
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
