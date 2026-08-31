@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 import os
 import tempfile
@@ -26,7 +25,6 @@ def transcribe():
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-
             input_path = os.path.join(
                 temp_dir,
                 audio_file.filename
@@ -42,13 +40,13 @@ def transcribe():
             audio_file.save(input_path)
 
             predict_and_save(
-                [input_path],
-                output_dir,
-                True,
-                False,
-                False,
-                False,
-                ICASSP_2022_MODEL_PATH
+                audio_path_list=[input_path],
+                output_directory=output_dir,
+                save_midi=True,
+                sonify_midi=False,
+                save_model_outputs=False,
+                save_notes=False,
+                model_or_model_path=ICASSP_2022_MODEL_PATH
             )
 
             files = os.listdir(output_dir)
