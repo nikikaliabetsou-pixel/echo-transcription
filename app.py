@@ -1,49 +1,83 @@
+```python
 from flask import Flask, request, jsonify
 import os
 import tempfile
+
 from basic_pitch.inference import predict_and_save
 from basic_pitch import ICASSP_2022_MODEL_PATH
 
 app = Flask(__name__)
 
+
 @app.route("/")
 def home():
     return "Echo transcription backend is running!"
 
+
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
+    # Check that a file was uploaded
     if "file" not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
+        return jsonify({
+            "error": "No audio file provided"
+        }), 400
 
     audio_file = request.files["file"]
 
+    # Check that the file has a name
     if audio_file.filename == "":
-        return jsonify({"error": "No audio file selected"}), 400
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        input_path = os.path.join(temp_dir, audio_file.filename)
-        output_dir = os.path.join(temp_dir, "output")
-
-        os.makedirs(output_dir, exist_ok=True)
-        audio_file.save(input_path)
-
-        predict_and_save(
-            [input_path],
-            output_dir,
-            True,
-            False,
-            False,
-            False,
-            ICASSP_2022_MODEL_PATH
-        )
-
-        files = os.listdir(output_dir)
-
         return jsonify({
-            "message": "Transcription complete",
-            "files": files
-        })
+            "error": "No audio file selected"
+        }), 400
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+
+            # Save uploaded audio
+            input_path = os.path.join(
+                temp_dir,
+                audio_file.filename
+            )
+
+            output_dir = os.path.join(
+                temp_dir,
+                "output"
+            )
+
+            os.makedirs(output_dir, exist_ok=True)
+
+            audio_file.save(input_path)
+
+            # Transcribe audio into MIDI
+            predict_and_save(
+                audio_path_list=[input_path],
+                output_directory=output_dir,
+                save_midi=True,
+                sonify_midi=False,
+                save_model_outputs=False,
+                save_notes=False,
+                model_or_model_path=ICASSP_2022_MODEL_PATH
+            )
+
+            # Get generated files
+            files = os.listdir(output_dir)
+
+            return jsonify({
+                "message": "Transcription complete",
+                "files": files
+            })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
+```
